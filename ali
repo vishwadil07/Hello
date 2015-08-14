@@ -1,0 +1,128 @@
+rm(list = ls())
+
+save(mydata, file = paste0(getwd(), "mydata.RData"))
+
+############### Libraries to be loaded ################
+
+library(dplyr)
+library(plyr)
+
+############### Functions to be used ###################
+
+propmiss.NA.blank.Not.App <- function(dataframe) {
+  m <- sapply(dataframe, function(x) {
+    data.frame(
+      nmiss=sum(is.na(x) | x=="" | x=="N/A"), 
+      n=length(x), 
+      propmiss=sum(is.na(x) | x=="" | x=="N/A")/length(x)
+    )
+  })
+  d <- data.frame(t(m))
+  d <- sapply(d, unlist)
+  d <- as.data.frame(d)
+  d$variable <- row.names(d)
+  row.names(d) <- NULL
+  d <- cbind(d[ncol(d)],d[-ncol(d)])
+  return(d[order(d$propmiss), ])
+}
+
+##################### Import data ######################
+
+jan <- read.csv("D:/micstura-0a883a1/1 - Jan.csv",skip = 2,stringsAsFactors = F)
+feb <- read.csv("D:/micstura-0a883a1/2 - Feb.csv",skip = 2,stringsAsFactors = F)
+mar <- read.csv("D:/micstura-0a883a1/3 - Mar.csv",skip = 2,stringsAsFactors = F)
+apr <- read.csv("D:/micstura-0a883a1/4 - Apr.csv",skip = 2,stringsAsFactors = F)
+may <- read.csv("D:/micstura-0a883a1/5 - May.csv",skip = 2,stringsAsFactors = F)
+jun <- read.csv("D:/micstura-0a883a1/6 - June.csv",stringsAsFactors = F)
+jul <- read.csv("D:/micstura-0a883a1/7 - July.csv",skip = 2,stringsAsFactors = F)
+aug <- read.csv("D:/micstura-0a883a1/8 - Aug.csv",skip = 2,stringsAsFactors = F)
+sep <- read.csv("D:/micstura-0a883a1/9 - Sept.csv",skip = 2,stringsAsFactors = F)
+oct <- read.csv("D:/micstura-0a883a1/10 - Oct.csv",skip = 2,stringsAsFactors = F)
+nov <- read.csv("D:/micstura-0a883a1/11 - Nov.csv",stringsAsFactors = F)
+dec <- read.csv("D:/micstura-0a883a1/12 - Dec.csv",skip = 2,stringsAsFactors = F)
+
+############# Check variable names #############
+
+names(dec) == names(jan)
+
+############# Merge datasets ###################
+
+safe.data <- do.call("rbind",list(jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec))
+
+royal <- safe.data
+id <- as.data.frame(seq(1,nrow(royal),1))
+names(id) <- "id"
+royal <- cbind(id,royal)
+orv <- select(royal,id ,Cabin.Category.Class.Code ,Gender.Code ,Marital.Status.Code ,OVE ,Quality.of.Food.in.Main.Dining.Room ,Main.Dining.Room.Service ,Beverage.and.Lounge.Service
+              ,Beverage.Selection ,Quality.of.Food.in.Windjammer ,Windjammer.Service ,X150.Central.Park ,Chops.Grille ,Giovanni.s.Table ,Ice.Cream.Parlor ,Izumi ,Johnny.Rockets
+              ,Portofino ,Rita.s.Cantina ,Samba.Grill ,Seafood.Shack ,Solarium.Bistro ,Sabor ,Cupcake.Cupboard ,Guest.Services.Staff ,Crown...Anchor ,Friendliness.of.Staff
+              ,Officer.Visibility ,Stateroom.Experience.Composite ,Ship.Appearance ,Ship.Maintenance.Composite ,Ship.Cleanliness.Composite ,Overall.Entertainment
+              ,Activities.Composite ,Entertainment.Composite ,Casino ,Spa ,Fitness.Facilities ,Onboard.Shopping ,Photo ,Shore.Experience ,Itinerary ,Check.In
+              ,Leaving.Ship..Terminal. ,Leaving.Ship..Onboard. ,Rci.Value.Segment)
+
+variables <- c("id" ,"Cabin.Category.Class.Code" ,"Gender.Code" ,"Marital.Status.Code" ,"OVE" ,"Quality.of.Food.in.Main.Dining.Room" ,"Main.Dining.Room.Service"
+               ,"Beverage.and.Lounge.Service" ,"Beverage.Selection" ,"Quality.of.Food.in.Windjammer" ,"Windjammer.Service" ,"X150.Central.Park" ,"Chops.Grille" ,"Giovanni.s.Table"
+               ,"Ice.Cream.Parlor" ,"Izumi" ,"Johnny.Rockets" ,"Portofino" ,"Rita.s.Cantina" ,"Samba.Grill" ,"Seafood.Shack" ,"Solarium.Bistro" ,"Sabor" ,"Cupcake.Cupboard"
+               ,"Guest.Services.Staff" ,"Crown...Anchor" ,"Friendliness.of.Staff" ,"Officer.Visibility" ,"Stateroom.Experience.Composite" ,"Ship.Appearance"
+               ,"Ship.Maintenance.Composite" ,"Ship.Cleanliness.Composite" ,"Overall.Entertainment" ,"Activities.Composite" ,"Entertainment.Composite" ,"Casino" ,"Spa"
+               ,"Fitness.Facilities" ,"Onboard.Shopping" ,"Photo" ,"Shore.Experience" ,"Itinerary" ,"Check.In" ,"Leaving.Ship..Terminal." ,"Leaving.Ship..Onboard."
+               ,"Rci.Value.Segment")
+
+propmiss.NA.blank.Not.App <- propmiss.NA.blank.Not.App(orv)
+
+restaurent <- select(orv,Johnny.Rockets ,Chops.Grille ,Giovanni.s.Table ,Solarium.Bistro ,Izumi ,Cupcake.Cupboard ,X150.Central.Park ,Portofino ,Ice.Cream.Parlor ,Rita.s.Cantina
+                     ,Samba.Grill ,Sabor ,Seafood.Shack)
+
+var <- c("Johnny.Rockets" ,"Chops.Grille" ,"Giovanni.s.Table" ,"Solarium.Bistro" ,"Izumi" ,"Cupcake.Cupboard" ,"X150.Central.Park" ,"Portofino" ,"Ice.Cream.Parlor"
+         ,"Rita.s.Cantina" ,"Samba.Grill" ,"Sabor" ,"Seafood.Shack")
+
+rest <- restaurent
+rest[is.na(rest)] <- ""
+rest[rest=="N/A"] <- NA
+r <- lapply(rest, as.numeric)
+r1 <- as.data.frame(r)
+a <- rowMeans(r1,na.rm = T)
+orig <- restaurent
+
+index <- sort(union(which(rest[,12] %in% 'N/A'),which(rest[,13] %in% 'N/A')))
+
+
+
+vec <- vector()
+
+na_index <- sort(union(union(union(which(c[, 1] %in% 'N/A'), which(c[, 2] %in% 'N/A')),
+                             which(c[, 3] %in% 'N/A')), which(c[, 4] %in% 'N/A')))
+
+for(i in na_index){
+  val <- mean(as.numeric(rest[i, -rest(which(rest[i, ] %in% 'N/A'))]), na.rm = T)
+  vec <- append(vec, val)
+}
+
+row.names(c[-na_index, ])
+
+na_index <- sort(union(union(union(which(c[, 1] %in% 'N/A'), which(c[, 2] %in% 'N/A')),
+                             which(c[, 3] %in% 'N/A')), which(c[, 4] %in% 'N/A')))
+
+origt <- t(orig)
+
+gr <- (grepl("N/A",orig))
+rm(gr)
+# num <- ifelse(is.nan(a),0,1)
+# na <- c("N/A")
+# 
+# 
+# b <- apply(orig,1,function(x){
+#   if(num == 0 & any(x %in% na)){ 
+#     1 
+#   } else {
+#     0
+#   }
+# })
+
+
+ 
+
+
+
+
+
